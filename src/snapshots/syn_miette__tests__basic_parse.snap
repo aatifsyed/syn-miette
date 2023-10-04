@@ -1,7 +1,12 @@
 ---
 source: src/lib.rs
-expression: "test_parse::<DeriveInput>(\"struct Foo\", Behaviour::Bare)"
+expression: "test_parse::<DeriveInput>(\"struct Foo\", Behaviour::IncludeSource)"
 ---
   × unexpected end of input, expected one of: `where`, parentheses, curly
   │ braces, `;`
+   ╭────
+ 1 │ struct Foo
+   · ▲
+   · ╰── unexpected end of input, expected one of: `where`, parentheses, curly braces, `;`
+   ╰────
 

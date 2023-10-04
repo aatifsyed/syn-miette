@@ -1,6 +1,15 @@
 ---
 source: src/lib.rs
-expression: "test_parse::<UniqueIdents>(\"hello\\nworld\\nhello\", Behaviour::Bare)"
+expression: "test_parse::<UniqueIdents>(\"hello\\nworld\\nhello\", Behaviour::IncludeFilename)"
 ---
   × duplicate ident found
+   ╭─[/path/to/file:1:1]
+ 1 │ hello
+   · ──┬─
+   ·   ╰── first definition here
+ 2 │ world
+ 3 │ hello
+   · ──┬─
+   ·   ╰── duplicate ident found
+   ╰────
 

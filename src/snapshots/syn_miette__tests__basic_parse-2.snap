@@ -1,10 +1,10 @@
 ---
 source: src/lib.rs
-expression: "test_parse::<DeriveInput>(\"struct Foo\", Behaviour::IncludeSource)"
+expression: "test_parse::<DeriveInput>(\"struct Foo\", Behaviour::IncludeFilename)"
 ---
   × unexpected end of input, expected one of: `where`, parentheses, curly
   │ braces, `;`
-   ╭────
+   ╭─[/path/to/file:1:1]
  1 │ struct Foo
    · ▲
    · ╰── unexpected end of input, expected one of: `where`, parentheses, curly braces, `;`
