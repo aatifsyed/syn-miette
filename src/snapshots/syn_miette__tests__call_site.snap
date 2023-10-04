@@ -1,0 +1,6 @@
+---
+source: src/lib.rs
+expression: "render(Error::from(syn::Error::new(Span::call_site(),\n            \"the whole thing is fucked\")))"
+---
+  × the whole thing is fucked
+

@@ -1,0 +1,11 @@
+---
+source: src/lib.rs
+expression: "render(Error::new(syn::Error::new(Span::call_site(),\n            \"the whole thing is fucked\"), \"this is the source code\"))"
+---
+  × the whole thing is fucked
+   ╭────
+ 1 │ this is the source code
+   · ▲
+   · ╰── the whole thing is fucked
+   ╰────
+

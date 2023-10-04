@@ -1,0 +1,6 @@
+---
+source: src/lib.rs
+expression: "test_parse::<UniqueIdents>(\"hello\\nworld\\nhello\", Behaviour::Bare)"
+---
+  × duplicate ident found
+

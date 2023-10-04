@@ -1,0 +1,7 @@
+---
+source: src/lib.rs
+expression: "test_parse::<DeriveInput>(\"struct Foo\", Behaviour::Bare)"
+---
+  × unexpected end of input, expected one of: `where`, parentheses, curly
+  │ braces, `;`
+
