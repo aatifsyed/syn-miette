@@ -1,9 +1,57 @@
+//! A [`syn::Error`] wrapper that provides pretty diagnostic messages using [`miette`].
+//!
+//! ```text
+//!   × expected identifier
+//!    ╭─[1:1]
+//!  1 │
+//!  2 │ pub struct {
+//!    ·           ┬
+//!    ·           ╰── expected identifier
+//!  3 │     num_yaks: usize
+//!    ╰────
+//! ```
+//!
+//! # Usage
+//! ```
+//! let source = r"
+//! pub struct {
+//!     num_yaks: usize
+//! }";
+//!
+//! let error = syn::parse_str::<syn::DeriveInput>(source).unwrap_err();
+//! let error = syn_miette::Error::new(error, source);
+//!
+//! let rendered = render(error); // See miette documentation for usage
+//!
+//! println!("{}", rendered);
+//!
+//! # fn render(error: syn_miette::Error) -> String { String::new() }
+//! ```
+//!
+//!
+//! Notably, [`Error`] properly renders children that have been [`syn::Error::combine`]-ed:
+//! ```text
+//!  × duplicate definition of `Foo`
+//!   ╭─[1:1]
+//! 1 │ struct Foo;
+//!   ·        ─┬─
+//!   ·         ╰── initial definition here
+//! 2 │ enum Bar {}
+//! 3 │ union Foo {}
+//!   ·       ─┬─
+//!   ·        ╰── duplicate definition of `Foo`
+//!   ╰────
+//! ```
+
 use std::{fmt, sync::Arc};
 
 use miette::{
     Diagnostic, LabeledSpan, MietteSpanContents, SourceCode, SourceOffset, SourceSpan, SpanContents,
 };
 
+/// A [`syn::Error`] wrapper that provides pretty diagnostic messages.
+///
+/// See the [module documentation](mod@self) for more.
 #[derive(Debug, Clone)]
 pub struct Error {
     source_code: MaybeNamedSource<Arc<str>>,
@@ -95,12 +143,12 @@ impl Diagnostic for Error {
                 let start_offset = SourceOffset::from_location(
                     &self.source_code.source_code,
                     span_start.line,
-                    span_start.column,
+                    span_start.column + 1,
                 );
                 let end_offset = SourceOffset::from_location(
                     &self.source_code.source_code,
                     span_end.line,
-                    span_end.column,
+                    span_end.column + 1,
                 );
                 let length = SourceOffset::from(end_offset.offset() - start_offset.offset());
                 LabeledSpan::new_with_span(
@@ -136,11 +184,9 @@ where
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, miette::MietteError> {
-        dbg!(&span, &context_lines_before, &context_lines_after);
         let contents =
             self.source_code
                 .read_span(span, context_lines_before, context_lines_after)?;
-        dbg!("read contents");
         let data = contents.data();
         let span = *contents.span();
         let line = contents.line();
@@ -159,7 +205,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::collections::HashMap;
 
     use miette::{GraphicalReportHandler, GraphicalTheme};
     use proc_macro2::{Ident, Span};
@@ -198,32 +244,37 @@ mod tests {
 
     #[test]
     fn combined() {
-        insta::assert_snapshot!(test_parse::<UniqueIdents>(
-            "hello\nworld\nhello",
+        insta::assert_snapshot!(test_parse::<UniqueDeriveInputs>(
+            "struct Foo;\nenum Bar {}\nunion Foo {}",
             Behaviour::IncludeSource
         ));
-        insta::assert_snapshot!(test_parse::<UniqueIdents>(
-            "hello\nworld\nhello",
-            Behaviour::IncludeFilename
-        ));
     }
 
-    struct UniqueIdents {
-        _idents: HashSet<Ident>,
-    }
+    struct UniqueDeriveInputs {}
 
-    impl Parse for UniqueIdents {
+    impl Parse for UniqueDeriveInputs {
         fn parse(input: ParseStream) -> syn::Result<Self> {
-            let mut seen = HashSet::new();
+            let mut seen = HashMap::<Ident, DeriveInput>::new();
             while !input.is_empty() {
-                let ident = input.parse::<Ident>()?;
-                let mut duplicate = syn::Error::new(ident.span(), "duplicate ident found");
-                if let Some(first) = seen.replace(ident) {
-                    duplicate.combine(syn::Error::new(first.span(), "first definition here"));
-                    return Err(duplicate);
+                let parsed = input.parse::<DeriveInput>()?;
+                match seen.remove(&parsed.ident) {
+                    Some(duplicate) => {
+                        let mut root = syn::Error::new(
+                            parsed.ident.span(),
+                            format!("duplicate definition of `{}`", parsed.ident),
+                        );
+                        root.combine(syn::Error::new(
+                            duplicate.ident.span(),
+                            "initial definition here",
+                        ));
+                        return Err(root);
+                    }
+                    None => {
+                        seen.insert(parsed.ident.clone(), parsed);
+                    }
                 }
             }
-            Ok(Self { _idents: seen })
+            Ok(Self {})
         }
     }
 
