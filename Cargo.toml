@@ -2,6 +2,10 @@
 name = "syn-miette"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/syn-miette"
+description = "A `syn::Error` wrapper that provides pretty diagnostic messages using `miette`."
+repository = "https://github.com/aatifsyed/syn-miette"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,4 +24,3 @@ syn = { version = "2.0.37", default-features = false, features = [
 ] }
 miette = { version = "5.10.0", features = ["fancy"] }
 insta = "1.33.0"
-pretty_assertions = "1.4.0"
