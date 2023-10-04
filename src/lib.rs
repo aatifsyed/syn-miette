@@ -11,6 +11,20 @@ pub struct Error {
 }
 
 impl Error {
+    /// Create an error without a filename.
+    ///
+    /// ```text
+    ///   ╭────
+    /// 1 │ struct Foo
+    ///   · ▲
+    ///   · ╰── unexpected end of input, expected one of: `where`, parentheses, curly braces, `;`
+    ///   ╰────
+    /// ```
+    ///
+    /// Note: if the source code and the [`syn::Error`] don't correlate, then
+    /// [rendering](miette::ReportHandler) will be incorrect, and may fail.
+    ///
+    /// This is because the [`syn::Error::span`] may be out-of-bounds.
     pub fn new(syn_error: syn::Error, source_code: impl Into<Arc<str>>) -> Self {
         Self {
             source_code: Some(MaybeNamedSource {
@@ -20,6 +34,20 @@ impl Error {
             syn_error,
         }
     }
+    /// Create an error with a filename for the source code
+    ///
+    /// ```text
+    ///   ╭─[/path/to/file:1:1]
+    /// 1 │ struct Foo
+    ///   · ▲
+    ///   · ╰── unexpected end of input, expected one of: `where`, parentheses, curly braces, `;`
+    ///   ╰────
+    /// ```
+    ///
+    /// Note: if the source code and the [`syn::Error`] don't correlate, then
+    /// [rendering](miette::ReportHandler) will be incorrect, and may fail.
+    ///
+    /// This is because the [`syn::Error::span`] may be out-of-bounds.
     pub fn new_named(
         syn_error: syn::Error,
         source_code: impl Into<Arc<str>>,
