@@ -3,7 +3,7 @@ source: src/lib.rs
 expression: "test_parse::<UniqueDeriveInputs>(\"struct Foo;\\nenum Bar {}\\nunion Foo {}\",\n    Behaviour::IncludeSource)"
 ---
   × duplicate definition of `Foo`
-   ╭─[1:1]
+   ╭─[1:8]
  1 │ struct Foo;
    ·        ─┬─
    ·         ╰── initial definition here
@@ -12,4 +12,3 @@ expression: "test_parse::<UniqueDeriveInputs>(\"struct Foo;\\nenum Bar {}\\nunio
    ·       ─┬─
    ·        ╰── duplicate definition of `Foo`
    ╰────
-

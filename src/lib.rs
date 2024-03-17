@@ -150,7 +150,7 @@ impl Diagnostic for Error {
                     span_end.line,
                     span_end.column + 1,
                 );
-                let length = SourceOffset::from(end_offset.offset() - start_offset.offset());
+                let length = end_offset.offset() - start_offset.offset();
                 LabeledSpan::new_with_span(
                     Some(syn_error.to_string()),
                     SourceSpan::new(start_offset, length),

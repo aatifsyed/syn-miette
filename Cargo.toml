@@ -10,20 +10,20 @@ repository = "https://github.com/aatifsyed/syn-miette"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-miette = { version = "5.10.0", default-features = false }
-proc-macro2 = { version = "1.0.67", default-features = false, features = [
+miette = { version = "7.2.0", default-features = false }
+proc-macro2 = { version = "1.0.79", default-features = false, features = [
     "span-locations",
 ] }
-syn = { version = "2.0.37", default-features = false }
+syn = { version = "2.0.53", default-features = false }
 
 [dev-dependencies]
-ariadne = "0.3.0"
-syn = { version = "2.0.37", default-features = false, features = [
+ariadne = "0.4.0"
+syn = { version = "2.0.53", default-features = false, features = [
     "parsing",
     "derive",
     "extra-traits",
     "printing",
 ] }
-miette = { version = "5.10.0", features = ["fancy"] }
-insta = "1.33.0"
-ropey = "1.6.0"
+miette = { version = "7.2.0", features = ["fancy"] }
+insta = "1.36.1"
+ropey = "1.6.1"
