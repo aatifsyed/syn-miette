@@ -17,10 +17,13 @@ proc-macro2 = { version = "1.0.67", default-features = false, features = [
 syn = { version = "2.0.37", default-features = false }
 
 [dev-dependencies]
+ariadne = "0.3.0"
 syn = { version = "2.0.37", default-features = false, features = [
     "parsing",
     "derive",
     "extra-traits",
+    "printing",
 ] }
 miette = { version = "5.10.0", features = ["fancy"] }
 insta = "1.33.0"
+ropey = "1.6.0"
