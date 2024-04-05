@@ -2,7 +2,6 @@ use ariadne::{Color, Label, Report, ReportKind, Source};
 use proc_macro2::{LineColumn, Span};
 use ropey::Rope;
 use std::{error::Error, fmt, ops::Range};
-use syn::spanned::Spanned as _;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let source_text = std::fs::read_to_string("/dev/stdin")?;
