@@ -1,0 +1,10 @@
+  × duplicate definition of `Foo`
+   ╭─[1:8]
+ 1 │ struct Foo;
+   ·        ─┬─
+   ·         ╰── initial definition here
+ 2 │ enum Bar {}
+ 3 │ union Foo {}
+   ·       ─┬─
+   ·        ╰── duplicate definition of `Foo`
+   ╰────

@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/syn-miette"
 description = "A `syn::Error` wrapper that provides pretty diagnostic messages using `miette`."
 repository = "https://github.com/aatifsyed/syn-miette"
+rust-version = "1.70.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,6 +17,13 @@ proc-macro2 = { version = "1.0.79", default-features = false, features = [
 ] }
 syn = { version = "2.0.53", default-features = false }
 
+[features]
+default = ["render"]
+render = [
+    "miette/fancy",
+    "miette/derive", # requiring this is a miette bug
+]
+
 [dev-dependencies]
 ariadne = "0.4.0"
 syn = { version = "2.0.53", default-features = false, features = [
@@ -24,6 +32,12 @@ syn = { version = "2.0.53", default-features = false, features = [
     "extra-traits",
     "printing",
 ] }
-miette = { version = "7.2.0", features = ["fancy"] }
 insta = "1.36.1"
 ropey = "1.6.1"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "do_doc_cfg"]
+
+[package.metadata.release]
+pre-release-hook = ["./check.bash"]

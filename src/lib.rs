@@ -1,18 +1,7 @@
 //! A [`syn::Error`] wrapper that provides pretty diagnostic messages using [`miette`].
 //!
-//! ```text
-//!   × expected identifier
-//!    ╭─[1:1]
-//!  1 │
-//!  2 │ pub struct {
-//!    ·           ┬
-//!    ·           ╰── expected identifier
-//!  3 │     num_yaks: usize
-//!    ╰────
-//! ```
-//!
 //! # Usage
-//! ```
+//! ```rust
 //! let source = r"
 //! pub struct {
 //!     num_yaks: usize
@@ -21,27 +10,28 @@
 //! let error = syn::parse_str::<syn::DeriveInput>(source).unwrap_err();
 //! let error = syn_miette::Error::new(error, source);
 //!
-//! let rendered = render(error); // See miette documentation for usage
-//!
-//! println!("{}", rendered);
-//!
-//! # fn render(error: syn_miette::Error) -> String { String::new() }
+//! assert_eq!(
+//!     error.render(), // only with `--feature render`
+//! "  × expected identifier
+//!    ╭─[2:12]
+//!  1 │ 
+//!  2 │ pub struct {
+//!    ·            ┬
+//!    ·            ╰── expected identifier
+//!  3 │     num_yaks: usize
+//!    ╰────
+//! "
+//! );
 //! ```
 //!
 //!
 //! Notably, [`Error`] properly renders children that have been [`syn::Error::combine`]-ed:
 //! ```text
-//!  × duplicate definition of `Foo`
-//!   ╭─[1:1]
-//! 1 │ struct Foo;
-//!   ·        ─┬─
-//!   ·         ╰── initial definition here
-//! 2 │ enum Bar {}
-//! 3 │ union Foo {}
-//!   ·       ─┬─
-//!   ·        ╰── duplicate definition of `Foo`
-//!   ╰────
+#![doc = include_str!("doc-snapshots/multiple")]
 //! ```
+
+#![allow(rustdoc::redundant_explicit_links)] // required for cargo-rdme
+#![cfg_attr(do_doc_cfg, feature(doc_cfg))]
 
 use std::{fmt, sync::Arc};
 
@@ -62,7 +52,7 @@ impl Error {
     /// Create an error without a filename.
     ///
     /// ```text
-    ///   ╭────
+    ///   ╭────[1:1]
     /// 1 │ struct Foo
     ///   · ▲
     ///   · ╰── unexpected end of input, expected one of: `where`, parentheses, curly braces, `;`
@@ -113,13 +103,31 @@ impl Error {
     pub fn source_code(&self) -> &Arc<str> {
         &self.source_code.source_code
     }
-    /// Get an exclusive reference to the [`syn::Error`], for e.g calling [`syn::Error::combine`]
+    /// Get a shared reference to the [`syn::Error`].
+    pub fn get(&mut self) -> &syn::Error {
+        &self.syn_error
+    }
+    /// Get an exclusive reference to the [`syn::Error`], for e.g calling [`syn::Error::combine`].
     pub fn get_mut(&mut self) -> &mut syn::Error {
         &mut self.syn_error
     }
     /// Convert this back to the original [`syn::Error`], discarding the source code.
     pub fn into_inner(self) -> syn::Error {
         self.into()
+    }
+    /// Convenience method for fancy-rendering this error with [`miette::GraphicalTheme::unicode_nocolor`].
+    /// # Panics
+    /// - if [`miette::GraphicalReportHandler::render_report`] fails.
+    #[cfg_attr(do_doc_cfg, doc(cfg(feature = "render")))]
+    #[cfg(feature = "render")]
+    pub fn render(&self) -> String {
+        use miette::{GraphicalReportHandler, GraphicalTheme};
+        let mut s = String::new();
+        GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .with_width(80)
+            .render_report(&mut s, self)
+            .unwrap();
+        s
     }
 }
 
@@ -203,11 +211,10 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "render"))]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, fs, path::Path};
 
-    use miette::{GraphicalReportHandler, GraphicalTheme};
     use proc_macro2::{Ident, Span};
     use syn::{parse::Parse, parse::ParseStream, DeriveInput};
 
@@ -232,14 +239,16 @@ mod tests {
 
     #[test]
     fn call_site() {
-        insta::assert_snapshot!(render(Error::new(
+        insta::assert_snapshot!(Error::new(
             syn::Error::new(Span::call_site(), "the whole thing is fucked"),
             "this is the source code"
-        )));
-        insta::assert_snapshot!(render(Error::new(
+        )
+        .render());
+        insta::assert_snapshot!(Error::new(
             syn::Error::new(Span::call_site(), "the whole thing is fucked"),
             "this is the source code\nand it's fucked on multiple\nlines"
-        )));
+        )
+        .render());
     }
 
     #[test]
@@ -247,7 +256,8 @@ mod tests {
         insta::assert_snapshot!(test_parse::<UniqueDeriveInputs>(
             "struct Foo;\nenum Bar {}\nunion Foo {}",
             Behaviour::IncludeSource
-        ));
+        )
+        .and_doc_snapshot("multiple"));
     }
 
     struct UniqueDeriveInputs {}
@@ -287,16 +297,34 @@ mod tests {
             Behaviour::IncludeSource => Error::new(error, source_code),
             Behaviour::IncludeFilename => Error::new_named(error, source_code, "/path/to/file"),
         };
-        render(error)
+        error.render()
     }
 
-    fn render(error: Error) -> String {
-        let renderer =
-            GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor()).with_width(80);
-        let mut out = String::new();
-        renderer
-            .render_report(&mut out, &error)
-            .expect("failed to render error");
-        out
+    trait AndDocSnapshot: AsRef<str> {
+        #[track_caller]
+        fn and_doc_snapshot(&self, name: &str) -> &Self {
+            let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src/doc-snapshots")
+                .join(name);
+            match fs::read_to_string(&path)
+                .map(|it| it == self.as_ref())
+                .unwrap_or(false)
+            {
+                true => {}
+                false => match fs::write(path, self.as_ref()) {
+                    Ok(()) => panic!(
+                        "doc snapshot {} was out of date - a new one has been written",
+                        name
+                    ),
+                    Err(e) => panic!(
+                        "doc snapshot {} was out of date, and a new one couldn't be written: {}",
+                        name, e
+                    ),
+                },
+            }
+
+            self
+        }
     }
+    impl<T> AndDocSnapshot for T where T: AsRef<str> {}
 }
